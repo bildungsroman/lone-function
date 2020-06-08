@@ -16,6 +16,9 @@ Resources:
       Tracing: Active
       Policies:
         - AWSXrayWriteOnlyAccess
+      Environment:
+        Variables:
+          SECRET: !Ref EnvConfigsecretSecretAsString
 Parameters:
   StackTagName:
     Type: String
@@ -23,3 +26,9 @@ Parameters:
   EnvironmentTagName:
     Type: String
     Description: Environment Name (injected by Stackery at deployment time)
+  EnvConfigsecretSecretAsString:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /<EnvironmentName>/secretSecret
+Metadata:
+  EnvConfigParameters:
+    EnvConfigsecretSecretAsString: secretSecret

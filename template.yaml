@@ -10,8 +10,8 @@ Resources:
         - ResourceName: Function
       CodeUri: src/Function
       Handler: index.handler
-      Runtime: nodejs10.x
-      MemorySize: 3008
+      Runtime: nodejs12.x
+      MemorySize: 10240
       Timeout: 30
       Tracing: Active
       Policies:

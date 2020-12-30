@@ -25,6 +25,9 @@ Is external documentation needed? If so, link to the ticket
 Are there any new keys or updates needed in the Stackery environment to enable this change?
 If so, please list them out and briefly explain what they are, how they can be generated for staging and individual developer environments
 
+### Internal changelog?
+False (change to `True` to add to the weekly internal changelog)
+
 ## Labels
 Please add one or more of the following labels to the PR
 * `Minor` - (small bug fixes, small refactor, etc)

@@ -26,7 +26,7 @@ Are there any new keys or updates needed in the Stackery environment to enable t
 If so, please list them out and briefly explain what they are, how they can be generated for staging and individual developer environments
 
 ### Internal changelog?
-False (change to `True` to add to the weekly internal changelog)
+True (change to `False` to omit from the weekly internal changelog)
 
 ## Labels
 Please add one or more of the following labels to the PR

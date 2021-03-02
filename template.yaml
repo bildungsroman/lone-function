@@ -7,7 +7,6 @@ Globals:
 Parameters:
   DatabaseName:
     Type: String
-    Description: Please enter a name for the database
     Default: DynamoDbTable
   ParameterValue:
     Type: String
@@ -57,6 +56,8 @@ Resources:
       Environment:
         Variables:
           databaseName: !Ref DatabaseName
+          TABLE_NAME: !Ref DynamoDBTable
+          TABLE_ARN: !GetAtt DynamoDBTable.Arn
       Layers:
         - !Ref CacheExtensionLayer
       Policies:
@@ -69,6 +70,8 @@ Resources:
             ParameterName: !Ref SSMParameter
         - AWSSecretsManagerGetSecretValuePolicy:
             SecretArn: !Ref SecretRecord
+        - DynamoDBCrudPolicy:
+            TableName: !Ref DynamoDBTable
   CacheExtensionLayer:
     Type: AWS::Serverless::LayerVersion
     Properties:

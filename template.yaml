@@ -1,27 +1,104 @@
-AWSTemplateFormatVersion: 2010-09-09
+AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Resources:
+Description: Sample AWS SAM App for Cache Extension demo application
+Globals:
   Function:
-    Type: AWS::Serverless::Function
+    Timeout: 10
+Parameters:
+  DatabaseName:
+    Type: String
+    Description: Please enter a name for the database
+    Default: DynamoDbTable
+  ParameterValue:
+    Type: String
+    Description: Parameter value stored in Systems Manager Parameter Store
+    Default: MyParameter
+  SecretValue:
+    Type: String
+    Description: Secret value stored in AWS Secrets manager
+    Default: MySecret
+    NoEcho: true
+Resources:
+  DynamoDBTable:
+    Type: AWS::DynamoDB::Table
     Properties:
-      FunctionName: !Sub ${AWS::StackName}-Function
-      Description: !Sub
-        - Stack ${StackTagName} Environment ${EnvironmentTagName} Function ${ResourceName}
-        - ResourceName: Function
-      CodeUri: src/Function
+      TableName: !Ref DatabaseName
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: pKey
+          AttributeType: S
+        - AttributeName: sKey
+          AttributeType: S
+      KeySchema:
+        - AttributeName: pKey
+          KeyType: HASH
+        - AttributeName: sKey
+          KeyType: RANGE
+  SSMParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: CacheExtensions_Parameter1
+      Type: String
+      Value: !Ref ParameterValue
+  SecretRecord:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: secret_info
+      SecretString: !Ref SecretValue
+  SampleFunction:
+    Type: AWS::Serverless::Function
+    DependsOn:
+      - DynamoDBTable
+      - SSMParameter
+    Properties:
+      CodeUri: ../example-function/
       Handler: index.handler
       Runtime: nodejs12.x
-      MemorySize: 10240
-      Timeout: 30
-      Tracing: Active
-      Policies:
-        - AWSXrayWriteOnlyAccess
       Environment:
-        Variables: {}
-Parameters:
-  StackTagName:
-    Type: String
-    Description: Stack Name (injected by Stackery at deployment time)
-  EnvironmentTagName:
-    Type: String
-    Description: Environment Name (injected by Stackery at deployment time)
+        Variables:
+          databaseName: !Ref DatabaseName
+      Layers:
+        - !Ref CacheExtensionLayer
+      Policies:
+        - AmazonSSMReadOnlyAccess
+        - DynamoDBReadPolicy:
+            TableName: !Ref DynamoDBTable
+        - SSMParameterReadPolicy:
+            ParameterName: !Ref SSMParameter
+        - SSMParameterReadPolicy:
+            ParameterName: !Ref SSMParameter
+        - AWSSecretsManagerGetSecretValuePolicy:
+            SecretArn: !Ref SecretRecord
+  CacheExtensionLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      ContentUri: ../bin/
+      CompatibleRuntimes:
+        - nodejs12.x
+        - python3.8
+        - java11
+        - go1.x
+      LayerName: Cache_Extension_Layer
+      Description: Caching layer for DynamoDB
+  DatabaseEntry:
+    Type: AWS::Serverless::Function
+    DependsOn:
+      - DynamoDBTable
+    Properties:
+      Handler: index.handler
+      Runtime: nodejs12.x
+      Timeout: 15
+      CodeUri: DatabaseEntryCode/
+      Policies:
+        - DynamoDBWritePolicy:
+            TableName: !Ref DynamoDBTable
+  CustomResource:
+    Type: Custom::LambdaInvoker
+    DependsOn: DatabaseEntry
+    Properties:
+      ServiceToken: !GetAtt DatabaseEntry.Arn
+      DBName: !Ref DatabaseName
+Outputs:
+  SampleCacheExtensionsFunction:
+    Description: Sample Cache Extensions Lambda Function ARN
+    Value: !GetAtt SampleFunction.Arn
